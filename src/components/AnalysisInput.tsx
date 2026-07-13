@@ -208,6 +208,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                     padding: 6,
                     boxShadow: '0 16px 48px rgba(0,0,0,0.4)',
                   }}
+                  className="mobile-samples-dropdown"
                 >
                   {SAMPLE_PAYLOADS.map((s) => (
                     <button
@@ -299,6 +300,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onClick={() => fileInputRef.current?.click()}
+              className="mobile-dropzone"
               style={{
                 border: `2px dashed ${isDragOver ? 'var(--accent)' : 'var(--border-strong)'}`,
                 borderRadius: 14,

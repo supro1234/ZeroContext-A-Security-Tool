@@ -278,7 +278,7 @@ export const ForensicExport: React.FC<ForensicExportProps> = ({ reports }) => {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-sm"
+      className="glass-sm mobile-export-stack"
       style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 120 }}>

@@ -70,7 +70,7 @@ export const AnalyzePage: React.FC = () => {
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
       }}>
-        <div style={{
+        <div className="mobile-header-compact" style={{
           maxWidth: 1400,
           margin: '0 auto',
           padding: '0 24px',
@@ -201,7 +201,7 @@ export const AnalyzePage: React.FC = () => {
       </header>
 
       {/* ── Main Content ─────────────────────────────────────────── */}
-      <main style={{ flex: 1, maxWidth: 1400, margin: '0 auto', padding: '32px 24px', width: '100%' }}>
+      <main className="mobile-main-padding" style={{ flex: 1, maxWidth: 1400, margin: '0 auto', padding: '32px 24px', width: '100%' }}>
 
         {/* Hero */}
         <motion.div
@@ -227,7 +227,7 @@ export const AnalyzePage: React.FC = () => {
           </p>
 
           {/* Feature badges */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+          <div className="mobile-badge-row" style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
             {[
               { icon: <Terminal size={11} />, label: 'Web Worker Isolated' },
               { icon: <Shield size={11} />,   label: 'Sandboxed Analysis' },
@@ -378,6 +378,7 @@ export const AnalyzePage: React.FC = () => {
                     <button
                       key={r.id}
                       onClick={() => setCurrentReport(r)}
+                      className="session-history-btn"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -444,6 +445,9 @@ export const AnalyzePage: React.FC = () => {
         @media (max-width: 768px) {
           .responsive-grid {
             grid-template-columns: 1fr !important;
+          }
+          .session-history-btn {
+            padding: 10px !important;
           }
         }
       `}</style>

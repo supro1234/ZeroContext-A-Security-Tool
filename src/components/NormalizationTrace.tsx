@@ -48,7 +48,7 @@ export const NormalizationTrace: React.FC<NormalizationTraceProps> = ({ layers, 
       </div>
 
       {/* Layer pipeline */}
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: changedLayers.length > 0 ? 14 : 0 }}>
+      <div className="mobile-pipeline-scroll" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: changedLayers.length > 0 ? 14 : 0 }}>
         {layers.map((layer, i) => {
           const color = TECHNIQUE_COLORS[layer.technique] ?? '#94a3b8'
           return (
@@ -105,7 +105,7 @@ export const NormalizationTrace: React.FC<NormalizationTraceProps> = ({ layers, 
             <div style={{ fontSize: '0.68rem', color: TECHNIQUE_COLORS[layer.technique] ?? '#94a3b8', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Layer {layer.depth} — {TECHNIQUE_LABELS[layer.technique]}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div className="mobile-trace-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <div>
                 <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 2, textTransform: 'uppercase' }}>Input</div>
                 {/* SECURITY: snippets are escaped in normalizer via .slice() on sanitized strings */}

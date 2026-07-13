@@ -162,7 +162,7 @@ export const ThreatReport: React.FC<ThreatReportProps> = ({ report }) => {
       </div>
 
       {/* Stats row */}
-      <div style={{
+      <div className="mobile-stats-2col" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: 10,
@@ -236,7 +236,7 @@ export const ThreatReport: React.FC<ThreatReportProps> = ({ report }) => {
           <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             🤖 AI Deep Analysis ({report.aiAnalysis.modelUsed})
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+          <div className="mobile-ai-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
             <div className="glass-sm" style={{ padding: '8px 12px' }}>
               <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prompt Injection</div>
               <div style={{

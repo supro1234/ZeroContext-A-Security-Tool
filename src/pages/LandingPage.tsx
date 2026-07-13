@@ -168,7 +168,7 @@ function TerminalDemo() {
         <Terminal size={12} color="#475569" />
       </div>
       {/* Terminal body */}
-      <div ref={ref} style={{
+      <div ref={ref} className="mobile-terminal-body scroll-touch" style={{
         padding: '16px',
         fontFamily: 'var(--font-mono)',
         fontSize: '0.72rem',
@@ -221,7 +221,7 @@ export const LandingPage: React.FC = () => {
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
       }}>
-        <div style={{
+        <div className="mobile-nav-compact" style={{
           maxWidth: 1200,
           margin: '0 auto',
           padding: '0 24px',
@@ -277,7 +277,7 @@ export const LandingPage: React.FC = () => {
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section style={{
+      <section className="mobile-hero" style={{
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
@@ -425,6 +425,7 @@ export const LandingPage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.55, duration: 0.5 }}
+            className="mobile-stats-row"
             style={{
               display: 'flex',
               gap: 32,
@@ -500,7 +501,7 @@ export const LandingPage: React.FC = () => {
           </p>
         </motion.div>
 
-        <div style={{
+        <div className="mobile-features-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap: 20,
@@ -559,7 +560,7 @@ export const LandingPage: React.FC = () => {
         position: 'relative',
         zIndex: 1,
       }}>
-        <div style={{
+        <div className="mobile-cta-banner" style={{
           maxWidth: 600,
           margin: '0 auto',
           padding: '48px 40px',

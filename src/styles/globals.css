@@ -317,3 +317,231 @@ code, pre, .font-mono { font-family: var(--font-mono); }
   to   { opacity: 1; }
 }
 .fade-in { animation: fadeIn 0.3s ease both; }
+
+/* ── Mobile / Touch Optimizations ─────────────────────────────── */
+
+/* Safe-area padding for notched devices */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Momentum scrolling on iOS for overflow containers */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Prevent pull-to-refresh jank on main content */
+html {
+  overscroll-behavior-y: none;
+}
+
+/* Touch-friendly minimum tap target (44×44px per WCAG) */
+.btn-primary,
+.btn-ghost {
+  min-height: 44px;
+  touch-action: manipulation; /* disable 300ms delay on iOS */
+}
+
+/* ── Responsive breakpoints ─────────────────────────────────────── */
+
+/* ── ≤ 480px  (small phones) ──────────── */
+@media (max-width: 480px) {
+  /* Navbar */
+  .mobile-nav-compact {
+    height: 52px !important;
+    padding: 0 14px !important;
+  }
+
+  /* Hero section */
+  .mobile-hero {
+    padding: 64px 16px 48px !important;
+    min-height: 70vh !important;
+  }
+
+  /* Feature cards — single column */
+  .mobile-features-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* Terminal demo — full width, shorter */
+  .mobile-terminal-body {
+    height: 200px !important;
+    font-size: 0.65rem !important;
+  }
+
+  /* Stats row — 2 columns */
+  .mobile-stats {
+    gap: 20px !important;
+  }
+
+  /* CTA banner */
+  .mobile-cta-banner {
+    padding: 32px 20px !important;
+  }
+
+  /* Analyze hero text */
+  .mobile-analyze-hero {
+    margin-bottom: 24px !important;
+  }
+
+  /* Analyze page main padding */
+  .mobile-main-padding {
+    padding: 20px 14px !important;
+  }
+
+  /* Footer — hide verbose spans */
+  .mobile-footer-hide {
+    display: none !important;
+  }
+
+  /* ThreatReport stats grid 2-col */
+  .mobile-stats-2col {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* NormalizationTrace detail — single column */
+  .mobile-trace-grid {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  /* AI analysis grid — single column */
+  .mobile-ai-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* ForensicExport — stack buttons */
+  .mobile-export-stack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .mobile-export-stack .btn-ghost {
+    justify-content: center !important;
+  }
+
+  /* Analyze header — compact */
+  .mobile-header-compact {
+    height: 52px !important;
+    padding: 0 12px !important;
+  }
+
+  /* Samples dropdown — full width on small screens */
+  .mobile-samples-dropdown {
+    right: auto !important;
+    left: 0 !important;
+    min-width: 180px !important;
+  }
+
+  /* Textarea — fewer rows */
+  .code-textarea {
+    font-size: 0.8rem !important;
+  }
+
+  /* Feature badge wrapping */
+  .mobile-badge-wrap {
+    gap: 6px !important;
+  }
+}
+
+/* ── ≤ 768px  (tablets + phones) ────────── */
+@media (max-width: 768px) {
+  /* Two-column analysis layout → single column (backed by inline style, this is extra safety) */
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Buttons fill available width inside flex row */
+  .btn-primary,
+  .btn-ghost {
+    min-height: 44px;
+  }
+
+  /* Scrollable horizontal pipeline for NormalizationTrace */
+  .mobile-pipeline-scroll {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 8px !important;
+    flex-wrap: nowrap !important;
+    scroll-snap-type: x mandatory;
+  }
+  .mobile-pipeline-scroll > * {
+    scroll-snap-align: start;
+    flex-shrink: 0 !important;
+  }
+
+  /* Reduce glow effects on mobile (perf) */
+  .glow-accent, .glow-critical, .glow-high, .glow-medium, .glow-safe {
+    box-shadow: none !important;
+  }
+
+  /* Disable hover y-translate on touch devices (framer-motion whileHover) */
+  @media (hover: none) {
+    .glass:hover {
+      background: var(--glass-bg) !important;
+      border-color: var(--glass-border) !important;
+    }
+  }
+
+  /* Analyze page — hero badge row wrap */
+  .mobile-badge-row {
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 4px !important;
+  }
+
+  /* Stats row — tighter */
+  .mobile-stats-row {
+    gap: 16px !important;
+    margin-top: 32px !important;
+  }
+
+  /* Drop zone — compact on mobile */
+  .mobile-dropzone {
+    padding: 28px 16px !important;
+    min-height: 160px !important;
+  }
+
+  /* Session history buttons — larger tap area */
+  .session-history-btn {
+    padding: 10px !important;
+  }
+
+  /* Footer — compact */
+  footer {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    justify-content: center !important;
+    padding: 12px 16px !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Sticky navbar — account for iOS notch */
+  header, nav {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* ── Reduced motion — honour user preference ─────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar {
+    animation: none !important;
+    background: var(--accent) !important;
+  }
+  .scan-line-active {
+    animation: none !important;
+  }
+  .terminal-cursor::after {
+    animation: none !important;
+  }
+}
+
+/* ── High-contrast / forced-colors passthrough ──────────────── */
+@media (forced-colors: active) {
+  .btn-primary { forced-color-adjust: none; }
+  .btn-ghost   { forced-color-adjust: none; }
+}
