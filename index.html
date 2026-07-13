@@ -35,8 +35,10 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- NOTE: Security headers (CSP, HSTS, X-Frame-Options, etc.) are set
-         by vercel.json response headers in production. The meta CSP tag
-         below is intentionally minimal — only for local dev fallback. -->
+         by vercel.json response headers in production.
+         frame-ancestors is intentionally omitted here — the CSP spec forbids
+         it in <meta> tags (browsers ignore it and log a console error).
+         It is enforced via the HTTP header in vercel.json. -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
       script-src 'self' 'wasm-unsafe-eval';
@@ -45,7 +47,6 @@
       img-src 'self' data: blob:;
       connect-src 'self' http://localhost:8000 ws://localhost:*;
       worker-src 'self' blob:;
-      frame-ancestors 'none';
       object-src 'none';
       base-uri 'self';
     " />
