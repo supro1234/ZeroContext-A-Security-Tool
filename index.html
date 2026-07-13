@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO -->
+    <title>ZeroContext — Client-Side Threat Detection Engine</title>
+    <meta name="description" content="Real-time, client-side payload analysis for XSS, SQL injection, prompt injection and obfuscated malware. Zero server exposure. Open source." />
+    <meta name="keywords" content="threat detection, XSS scanner, SQL injection, prompt injection, security tool, payload analysis" />
+    <meta name="author" content="ZeroContext" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Social preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ZeroContext — Client-Side Threat Detection" />
+    <meta property="og:description" content="5-layer normalization engine. 70+ rules. Sub-5ms analysis. Your payloads never leave the browser." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="ZeroContext" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ZeroContext — Client-Side Threat Detection" />
+    <meta name="twitter:description" content="5-layer normalization engine. 70+ rules. Sub-5ms analysis." />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- NOTE: Security headers (CSP, HSTS, X-Frame-Options, etc.) are set
+         by vercel.json response headers in production. The meta CSP tag
+         below is intentionally minimal — only for local dev fallback. -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'wasm-unsafe-eval';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: blob:;
+      connect-src 'self' http://localhost:8000 ws://localhost:*;
+      worker-src 'self' blob:;
+      frame-ancestors 'none';
+      object-src 'none';
+      base-uri 'self';
+    " />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
