@@ -12,6 +12,8 @@
 [![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+**🚀 Live Demo: [Launch ZeroContext](https://zero-context-a-security-tool-ds1ir9mug-supro1234s-projects.vercel.app/)**
+
 </div>
 
 ---
