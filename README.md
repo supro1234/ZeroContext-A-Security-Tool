@@ -96,33 +96,6 @@ This starts:
 
 The Vite dev proxy forwards `/api/*` → `http://localhost:8000/*` automatically.
 
----
-
-## Vercel Deployment
-
-### One-click
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/ZeroContext)
-
-### Manual
-
-```bash
-npm install -g vercel
-vercel login
-vercel --prod
-```
-
-**What deploys:**
-- `dist/` → Vercel CDN (frontend)
-- `api/index.py` → Vercel Python Serverless (backend at `/api/*`)
-
-**Environment variables** (optional):
-
-| Variable | Purpose | Default |
-|---|---|---|
-| `FRONTEND_ORIGIN` | Allowed CORS origin | `https://zerocontext.vercel.app` |
-
----
 
 ## Security
 
@@ -223,10 +196,7 @@ Rules are defined in `public/rules/rules.json` and cover:
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/my-feature`
-3. Run `npx tsc --noEmit` before committing — zero TypeScript errors required
-4. Submit a PR with a clear description of the change
+Team : Lumix
 
 ---
 
