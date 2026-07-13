@@ -221,23 +221,27 @@ export const LandingPage: React.FC = () => {
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
       }}>
-        <div className="mobile-nav-compact" style={{
+        <div style={{
           maxWidth: 1200,
           margin: '0 auto',
-          padding: '0 24px',
+          padding: '0 16px',
           height: 56,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: 8,
+          overflow: 'hidden',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}>
+          {/* Left: logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, overflow: 'hidden' }}>
+            <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }} style={{ flexShrink: 0 }}>
               <Shield size={20} color="var(--accent)" />
             </motion.div>
-            <span style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em' }}>
+            <span style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
               Zero<span style={{ color: 'var(--accent)' }}>Context</span>
             </span>
-            <span style={{
+            {/* Hidden on mobile */}
+            <span className="nav-hide-mobile" style={{
               fontSize: '0.6rem',
               color: 'var(--text-muted)',
               fontFamily: 'var(--font-mono)',
@@ -245,21 +249,24 @@ export const LandingPage: React.FC = () => {
               border: '1px solid rgba(99,102,241,0.25)',
               borderRadius: 4,
               padding: '2px 6px',
+              flexShrink: 0,
             }}>v1.0 BETA</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Right: actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             <a
               href="https://github.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5 }}
+              style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, minHeight: 44, padding: '0 4px' }}
             >
-              <Globe size={13} /> GitHub
+              <Globe size={15} />
+              <span className="nav-hide-mobile">GitHub</span>
             </a>
             <button
               onClick={() => navigate('/analyze')}
               style={{
-                padding: '7px 16px',
+                padding: '8px 16px',
                 background: 'var(--accent)',
                 color: '#fff',
                 border: 'none',
@@ -268,6 +275,8 @@ export const LandingPage: React.FC = () => {
                 fontWeight: 600,
                 cursor: 'pointer',
                 fontFamily: 'var(--font-sans)',
+                whiteSpace: 'nowrap',
+                minHeight: 40,
               }}
             >
               Launch App

@@ -344,6 +344,19 @@ html {
 
 /* ── Responsive breakpoints ─────────────────────────────────────── */
 
+/* ── Navbar mobile collapse ──────────────────────────────────── */
+/* On phones, hide text labels — keep icons only */
+@media (max-width: 640px) {
+  .nav-hide-mobile {
+    display: none !important;
+  }
+  /* New Session button: icon-only, compact */
+  .nav-new-session {
+    padding: 6px !important;
+    gap: 0 !important;
+  }
+}
+
 /* ── ≤ 480px  (small phones) ──────────── */
 @media (max-width: 480px) {
   /* Navbar */

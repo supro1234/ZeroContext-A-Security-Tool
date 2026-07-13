@@ -70,27 +70,32 @@ export const AnalyzePage: React.FC = () => {
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
       }}>
-        <div className="mobile-header-compact" style={{
+        <div style={{
           maxWidth: 1400,
           margin: '0 auto',
-          padding: '0 24px',
-          height: 60,
+          padding: '0 16px',
+          height: 56,
           display: 'flex',
           alignItems: 'center',
-          gap: 16,
+          gap: 8,
+          overflow: 'hidden',
         }}>
           {/* Logo + New Session */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, overflow: 'hidden' }}>
             <button
               onClick={() => navigate('/')}
               style={{
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                padding: '4px',
+                padding: '6px',
                 color: 'var(--text-muted)',
                 display: 'flex',
                 alignItems: 'center',
+                flexShrink: 0,
+                minWidth: 32,
+                minHeight: 44,
+                justifyContent: 'center',
               }}
               title="Back to home"
             >
@@ -99,13 +104,15 @@ export const AnalyzePage: React.FC = () => {
             <motion.div
               animate={{ rotate: [0, 360] }}
               transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+              style={{ flexShrink: 0 }}
             >
-              <Shield size={22} color="var(--accent)" />
+              <Shield size={20} color="var(--accent)" />
             </motion.div>
-            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+            <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
               Zero<span style={{ color: 'var(--accent)' }}>Context</span>
             </span>
-            <span style={{
+            {/* BETA badge — hidden on mobile */}
+            <span className="nav-hide-mobile" style={{
               fontSize: '0.65rem',
               color: 'var(--text-muted)',
               fontFamily: 'var(--font-mono)',
@@ -113,6 +120,8 @@ export const AnalyzePage: React.FC = () => {
               border: '1px solid var(--border)',
               borderRadius: 4,
               padding: '2px 6px',
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
             }}>
               v1.0 BETA
             </span>
@@ -122,11 +131,12 @@ export const AnalyzePage: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
                 onClick={newSession}
+                className="nav-new-session"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 5,
-                  padding: '5px 12px',
+                  padding: '5px 10px',
                   fontSize: '0.72rem',
                   fontFamily: 'var(--font-mono)',
                   background: 'rgba(99,102,241,0.1)',
@@ -135,63 +145,69 @@ export const AnalyzePage: React.FC = () => {
                   color: 'var(--text-accent)',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  minHeight: 32,
                 }}
                 title="Clear session and start fresh"
               >
-                <RotateCcw size={11} /> New Session
+                <RotateCcw size={11} />
+                <span className="nav-hide-mobile">New Session</span>
               </motion.button>
             )}
           </div>
 
           {/* Status indicators */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Worker status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {/* Worker status — icon always visible, text hidden on mobile */}
             <motion.div
-              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem' }}
               animate={{ opacity: isReady ? 1 : 0.5 }}
             >
               {isAnalyzing ? (
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                  <Loader size={12} color="var(--accent)" />
+                  <Loader size={14} color="var(--accent)" />
                 </motion.div>
               ) : (
-                <Cpu size={12} color={isReady ? 'var(--safe)' : 'var(--text-muted)'} />
+                <Cpu size={14} color={isReady ? 'var(--safe)' : 'var(--text-muted)'} />
               )}
-              <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+              <span className="nav-hide-mobile" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                 {isAnalyzing ? 'Analyzing…' : isReady ? 'Engine Ready' : 'Loading…'}
               </span>
             </motion.div>
 
-            {/* Backend status — shown only when online */}
+            {/* Backend status — icon always visible, text hidden on mobile */}
             {backendStatus === 'online' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem' }}>
-                <Wifi size={12} color="var(--safe)" />
-                <span style={{ color: 'var(--safe)', fontFamily: 'var(--font-mono)' }}>AI Online</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem' }}>
+                <Wifi size={14} color="var(--safe)" />
+                <span className="nav-hide-mobile" style={{ color: 'var(--safe)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>AI Online</span>
               </div>
             )}
 
-            {/* New Session button was moved next to logo — see above */}
-
-            {/* CTF toggle */}
+            {/* CTF toggle — text hidden on mobile */}
             <button
               onClick={() => setIsCTFMode((c) => !c)}
               className="btn-ghost"
               style={{
-                padding: '5px 10px',
+                padding: '5px 8px',
                 fontSize: '0.72rem',
+                minHeight: 36,
                 color: isCTFMode ? '#f97316' : 'var(--text-muted)',
                 borderColor: isCTFMode ? '#f97316' : 'var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
               }}
               title="Toggle Red Team / CTF Mode"
             >
-              <Flag size={12} /> CTF
+              <Flag size={12} />
+              <span className="nav-hide-mobile">CTF</span>
             </button>
 
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
               className="btn-ghost"
-              style={{ padding: '6px 10px' }}
+              style={{ padding: '6px 8px', minHeight: 36 }}
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
