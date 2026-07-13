@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { Shield, Zap, Lock, Eye, GitBranch, ChevronRight, Terminal, Globe } from 'lucide-react'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 // ── Fake terminal lines ──────────────────────────────────────────────────────
 const TERMINAL_LINES = [
@@ -198,7 +199,8 @@ function TerminalDemo() {
 
 // ── Main Landing Page ────────────────────────────────────────────────────────
 export const LandingPage: React.FC = () => {
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const isMobile  = useMediaQuery('(max-width: 640px)')
 
   return (
     <div style={{
@@ -240,17 +242,19 @@ export const LandingPage: React.FC = () => {
             <span style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
               Zero<span style={{ color: 'var(--accent)' }}>Context</span>
             </span>
-            {/* Hidden on mobile */}
-            <span className="nav-hide-mobile" style={{
-              fontSize: '0.6rem',
-              color: 'var(--text-muted)',
-              fontFamily: 'var(--font-mono)',
-              background: 'rgba(99,102,241,0.1)',
-              border: '1px solid rgba(99,102,241,0.25)',
-              borderRadius: 4,
-              padding: '2px 6px',
-              flexShrink: 0,
-            }}>v1.0 BETA</span>
+            {/* Hidden on mobile — JS conditional, immune to CSS purging */}
+            {!isMobile && (
+              <span style={{
+                fontSize: '0.6rem',
+                color: 'var(--text-muted)',
+                fontFamily: 'var(--font-mono)',
+                background: 'rgba(99,102,241,0.1)',
+                border: '1px solid rgba(99,102,241,0.25)',
+                borderRadius: 4,
+                padding: '2px 6px',
+                flexShrink: 0,
+              }}>v1.0 BETA</span>
+            )}
           </div>
           {/* Right: actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -261,7 +265,7 @@ export const LandingPage: React.FC = () => {
               style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, minHeight: 44, padding: '0 4px' }}
             >
               <Globe size={15} />
-              <span className="nav-hide-mobile">GitHub</span>
+              {!isMobile && 'GitHub'}
             </a>
             <button
               onClick={() => navigate('/analyze')}
