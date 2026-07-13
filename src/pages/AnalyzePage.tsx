@@ -112,6 +112,17 @@ export const AnalyzePage: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Inline CSS — cannot be purged by Tailwind (inside JSX string) ── */}
+      <style>{`
+        @media (max-width: 640px) {
+          .zc-desktop-only { display: none !important; }
+        }
+        @media (min-width: 641px) {
+          .zc-mobile-only { display: none !important; }
+        }
+      `}</style>
+
       {/* ── Navbar ──────────────────────────────────────────────── */}
       <header style={{
         position: 'sticky',
@@ -125,28 +136,32 @@ export const AnalyzePage: React.FC = () => {
         <div style={{
           maxWidth: 1400,
           margin: '0 auto',
-          padding: '0 16px',
-          height: 56,
+          padding: '0 14px',
+          height: 52,
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 6,
           overflow: 'hidden',
         }}>
-          {/* ── Left: logo ─────────────────────────────────────── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, overflow: 'hidden' }}>
+
+          {/* ── Left: back + logo ──────────────────────────────── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0, overflow: 'hidden' }}>
+
+            {/* Back button — always visible */}
             <button
               onClick={() => navigate('/')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 padding: '6px', color: 'var(--text-muted)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, minWidth: 32, minHeight: 44,
+                flexShrink: 0, minWidth: 36, minHeight: 44,
               }}
               title="Back to home"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={18} />
             </button>
 
+            {/* Shield icon — always visible */}
             <motion.div
               animate={{ rotate: [0, 360] }}
               transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
@@ -155,13 +170,14 @@ export const AnalyzePage: React.FC = () => {
               <Shield size={20} color="var(--accent)" />
             </motion.div>
 
+            {/* Brand name — always visible */}
             <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
               Zero<span style={{ color: 'var(--accent)' }}>Context</span>
             </span>
 
-            {/* BETA badge — hidden on phones via JS (not CSS classes) */}
+            {/* BETA badge — desktop only (3-layer protection) */}
             {!isMobile && (
-              <span style={{
+              <span className="zc-desktop-only" style={{
                 fontSize: '0.65rem', color: 'var(--text-muted)',
                 fontFamily: 'var(--font-mono)', background: 'var(--glass-bg)',
                 border: '1px solid var(--border)', borderRadius: 4,
@@ -171,85 +187,89 @@ export const AnalyzePage: React.FC = () => {
               </span>
             )}
 
-            {/* New Session button */}
+            {/* New Session — desktop: icon+text, mobile: icon only */}
             {currentReport !== null && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
                 onClick={newSession}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 5,
-                  padding: isMobile ? '6px' : '5px 10px',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: isMobile ? '6px 8px' : '5px 10px',
                   fontSize: '0.72rem', fontFamily: 'var(--font-mono)',
                   background: 'rgba(99,102,241,0.1)',
                   border: '1px solid rgba(99,102,241,0.3)',
                   borderRadius: 6, color: 'var(--text-accent)',
                   cursor: 'pointer', whiteSpace: 'nowrap',
-                  flexShrink: 0, minHeight: 32,
+                  flexShrink: 0, minHeight: 36,
                 }}
-                title="Clear session and start fresh"
+                title="New session"
               >
                 <RotateCcw size={11} />
-                {!isMobile && ' New Session'}
+                {/* Text hidden on mobile — 3-layer protection */}
+                {!isMobile && <span className="zc-desktop-only"> New Session</span>}
               </motion.button>
             )}
           </div>
 
-          {/* ── Right: status + controls ────────────────────────── */}
+          {/* ── Right: controls ─────────────────────────────────── */}
+          {/* On mobile: ONLY theme toggle */}
+          {/* On desktop: engine status + AI online + CTF + theme */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            {/* Worker / reveal status — icon always visible, text hidden on mobile */}
-            <motion.div
-              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem' }}
-              animate={{ opacity: isReady ? 1 : 0.5 }}
-            >
-              {isBusy ? (
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                  <Loader size={14} color="var(--accent)" />
-                </motion.div>
-              ) : (
-                <Cpu size={14} color={isReady ? 'var(--safe)' : 'var(--text-muted)'} />
-              )}
-              {!isMobile && (
+
+            {/* Engine status — DESKTOP ONLY (3-layer) */}
+            {!isMobile && (
+              <motion.div
+                className="zc-desktop-only"
+                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem' }}
+                animate={{ opacity: isReady ? 1 : 0.5 }}
+              >
+                {isBusy ? (
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+                    <Loader size={13} color="var(--accent)" />
+                  </motion.div>
+                ) : (
+                  <Cpu size={13} color={isReady ? 'var(--safe)' : 'var(--text-muted)'} />
+                )}
                 <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                   {isAnalyzing ? 'Analyzing…' : isRevealing ? 'Processing…' : isReady ? 'Engine Ready' : 'Loading…'}
                 </span>
-              )}
-            </motion.div>
+              </motion.div>
+            )}
 
-            {/* AI Online — icon only on mobile */}
-            {backendStatus === 'online' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem' }}>
-                <Wifi size={14} color="var(--safe)" />
-                {!isMobile && (
-                  <span style={{ color: 'var(--safe)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>AI Online</span>
-                )}
+            {/* AI Online — DESKTOP ONLY (3-layer) */}
+            {!isMobile && backendStatus === 'online' && (
+              <div className="zc-desktop-only" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem' }}>
+                <Wifi size={13} color="var(--safe)" />
+                <span style={{ color: 'var(--safe)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>AI Online</span>
               </div>
             )}
 
-            {/* CTF toggle — icon only on mobile */}
-            <button
-              onClick={() => setIsCTFMode((c) => !c)}
-              className="btn-ghost"
-              style={{
-                padding: '5px 8px', fontSize: '0.72rem', minHeight: 36,
-                color: isCTFMode ? '#f97316' : 'var(--text-muted)',
-                borderColor: isCTFMode ? '#f97316' : 'var(--border)',
-                display: 'flex', alignItems: 'center', gap: 4,
-              }}
-              title="Toggle Red Team / CTF Mode"
-            >
-              <Flag size={12} />
-              {!isMobile && 'CTF'}
-            </button>
+            {/* CTF toggle — DESKTOP ONLY (3-layer) */}
+            {!isMobile && (
+              <button
+                className="zc-desktop-only btn-ghost"
+                onClick={() => setIsCTFMode((c) => !c)}
+                style={{
+                  padding: '5px 10px', fontSize: '0.72rem', minHeight: 36,
+                  color: isCTFMode ? '#f97316' : 'var(--text-muted)',
+                  borderColor: isCTFMode ? '#f97316' : 'var(--border)',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}
+                title="Toggle Red Team / CTF Mode"
+              >
+                <Flag size={12} /> CTF
+              </button>
+            )}
 
-            {/* Theme toggle */}
+            {/* Theme toggle — ALWAYS visible */}
             <button
               onClick={toggleTheme}
               className="btn-ghost"
-              style={{ padding: '6px 8px', minHeight: 36 }}
+              style={{ padding: '6px 10px', minHeight: 44 }}
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
-              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
           </div>
         </div>
