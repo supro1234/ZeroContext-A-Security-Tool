@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, DragEvent } from 'react'
+import React, { useState, useRef, useCallback, DragEvent, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Zap, X, ChevronDown, Upload, FileText, Image, File, Eye, AlertTriangle } from 'lucide-react'
 import { extractDocxText } from '../engine/docxParser'
@@ -158,8 +158,19 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
   const [hiddenRuns, setHiddenRuns] = useState<HiddenRun[]>([])
   const [contradictions, setContradictions] = useState<DataContradiction[]>([])
   const [fileTypeLabel, setFileTypeLabel] = useState<string>('')
+  const [autoAnalyzePending, setAutoAnalyzePending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-analyze after file extraction completes (800 ms delay for real-time feel)
+  useEffect(() => {
+    if (!autoAnalyzePending || !value || isExtracting || isAnalyzing || !isWorkerReady) return
+    setAutoAnalyzePending(false)
+    const timer = setTimeout(() => {
+      if (value.trim()) onAnalyze(value)
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [autoAnalyzePending, value, isExtracting, isAnalyzing, isWorkerReady, onAnalyze])
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault()
@@ -245,6 +256,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
 
     setUploadedFile(file)
     setIsExtracting(true)
+    setAutoAnalyzePending(false)
 
     try {
       // ── DOCX ──────────────────────────────────────────────────────────────
@@ -332,6 +344,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
       setUploadedFile(null)
     } finally {
       setIsExtracting(false)
+      setAutoAnalyzePending(true)  // trigger auto-analyze after extraction
     }
   }, [onDocumentFindings])
 
@@ -645,6 +658,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                     setExtractError(null)
                     setHiddenRuns([])
                     setContradictions([])
+                    setAutoAnalyzePending(false)
                   }}
                   style={{ padding: '8px 12px' }}
                 >
@@ -657,7 +671,11 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                   onClick={() => { if (value.trim()) onAnalyze(value) }}
                 >
                   <Zap size={16} />
-                  {isAnalyzing ? 'Analyzing…' : `Analyze ${fileTypeLabel}`}
+                  {isAnalyzing
+                    ? 'Analyzing…'
+                    : autoAnalyzePending
+                      ? 'Scanning…'
+                      : `Analyze ${fileTypeLabel}`}
                 </button>
               </motion.div>
             )}
