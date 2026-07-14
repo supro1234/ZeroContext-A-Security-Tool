@@ -1,6 +1,9 @@
 import React, { useState, useRef, useCallback, DragEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Zap, X, ChevronDown, Upload, FileText, Image, File } from 'lucide-react'
+import { Shield, Zap, X, ChevronDown, Upload, FileText, Image, File, Eye, AlertTriangle } from 'lucide-react'
+import { extractDocxText } from '../engine/docxParser'
+import { extractPdfText, extractTxtText, isZipBytes } from '../engine/pdfParser'
+import type { HiddenRun, DataContradiction } from '../types/threat'
 
 interface AnalysisInputProps {
   onAnalyze: (payload: string) => void
@@ -8,6 +11,11 @@ interface AnalysisInputProps {
   isAnalyzing: boolean
   isWorkerReady: boolean
   isCTFMode: boolean
+  onDocumentFindings?: (findings: {
+    hiddenRuns: HiddenRun[]
+    contradictions: DataContradiction[]
+    fileName: string
+  }) => void
 }
 
 const SAMPLE_PAYLOADS = [
@@ -41,48 +49,95 @@ function getFileIcon(file: File) {
   return <File size={16} color="var(--text-muted)" />
 }
 
-async function extractTextFromFile(file: File): Promise<string> {
-  // Plain text
-  if (file.type === 'text/plain') {
-    return await file.text()
-  }
+// ─── File Type Labels ─────────────────────────────────────────────────────────
 
-  // For PDF/DOC/DOCX — read as binary and extract visible ASCII text
-  // (Full parsing would need pdf.js / mammoth; this gives raw string content for threat analysis)
-  if (
-    file.type === 'application/pdf' ||
-    file.type.includes('word') ||
-    file.name.endsWith('.doc') ||
-    file.name.endsWith('.docx')
-  ) {
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const raw = e.target?.result as string
-        // Extract printable ASCII sequences of length ≥ 4
-        const printable = raw.match(/[\x20-\x7E]{4,}/g)?.join('\n') ?? '[Binary file — no readable text extracted]'
-        resolve(printable)
-      }
-      reader.readAsBinaryString(file)
-    })
-  }
-
-  // PNG / image — extract filename + metadata as payload context
-  if (file.type.startsWith('image/')) {
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const raw = e.target?.result as string
-        // Extract embedded text/metadata strings from binary
-        const strings = raw.match(/[\x20-\x7E]{4,}/g)?.join('\n') ?? ''
-        resolve(`[Image file: ${file.name}]\n\n${strings}`)
-      }
-      reader.readAsBinaryString(file)
-    })
-  }
-
-  return `[Unsupported file type: ${file.type}]`
+function getFileTypeLabel(file: File): string {
+  if (file.name.endsWith('.docx') || file.type.includes('wordprocessingml')) return 'DOCX'
+  if (file.name.endsWith('.doc') || file.type === 'application/msword') return 'DOC (legacy)'
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) return 'PDF'
+  if (file.type === 'text/plain' || file.name.endsWith('.txt')) return 'TXT'
+  if (file.type.startsWith('image/')) return 'Image'
+  return 'File'
 }
+
+// ─── Hidden-Run Summary Banner ────────────────────────────────────────────────
+
+const HiddenRunBanner: React.FC<{ runs: HiddenRun[]; contradictions: DataContradiction[] }> = ({
+  runs,
+  contradictions,
+}) => {
+  if (runs.length === 0 && contradictions.length === 0) return null
+
+  const REASON_LABELS: Record<string, string> = {
+    vanish: 'w:vanish',
+    webHidden: 'w:webHidden',
+    whiteColor: 'White/near-white colour',
+    nearZeroSize: 'Near-zero font size',
+    doubleHide: 'Double-hide (colour + highlight match)',
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{
+        marginTop: 12,
+        padding: '10px 14px',
+        background: 'rgba(239,68,68,0.08)',
+        border: '1px solid rgba(239,68,68,0.4)',
+        borderRadius: 10,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <Eye size={14} color="#ef4444" />
+        <span style={{ fontWeight: 600, fontSize: '0.78rem', color: '#ef4444' }}>
+          🚨 Hidden Text Detected — AUTO HIGH SEVERITY
+        </span>
+      </div>
+
+      {runs.map((run, i) => (
+        <div key={i} style={{
+          fontSize: '0.72rem',
+          fontFamily: 'var(--font-mono)',
+          color: 'var(--text-secondary)',
+          padding: '3px 0',
+          borderBottom: i < runs.length - 1 ? '1px solid rgba(239,68,68,0.15)' : 'none',
+        }}>
+          <span style={{ color: '#fca5a5' }}>[{REASON_LABELS[run.reason] ?? run.reason}]</span>
+          {' '}
+          <span style={{ color: 'var(--text-muted)' }}>
+            "{run.text.slice(0, 60)}{run.text.length > 60 ? '…' : ''}"
+          </span>
+          {run.colorHex && (
+            <span style={{ marginLeft: 8, color: '#fb923c' }}>color=#{run.colorHex}</span>
+          )}
+        </div>
+      ))}
+
+      {contradictions.length > 0 && (
+        <div style={{
+          marginTop: 8,
+          padding: '6px 8px',
+          background: 'rgba(234,179,8,0.08)',
+          border: '1px solid rgba(234,179,8,0.3)',
+          borderRadius: 6,
+        }}>
+          <div style={{ fontSize: '0.72rem', color: '#eab308', fontWeight: 600, marginBottom: 4 }}>
+            ⚠ {contradictions.length} Data Contradiction{contradictions.length !== 1 ? 's' : ''} Found
+          </div>
+          {contradictions.map((c, i) => (
+            <div key={i} style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginBottom: 2 }}>
+              Table says: <span style={{ color: '#eab308' }}>{c.tableValue}</span>
+              {' '}— Text claims: <span style={{ color: '#f97316' }}>{c.claimedValue}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export const AnalysisInput: React.FC<AnalysisInputProps> = ({
   onAnalyze,
@@ -90,6 +145,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
   isAnalyzing,
   isWorkerReady,
   isCTFMode,
+  onDocumentFindings,
 }) => {
   const [value, setValue] = useState('')
   const [showSamples, setShowSamples] = useState(false)
@@ -98,6 +154,10 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractError, setExtractError] = useState<string | null>(null)
+  const [binaryPasteError, setBinaryPasteError] = useState<string | null>(null)
+  const [hiddenRuns, setHiddenRuns] = useState<HiddenRun[]>([])
+  const [contradictions, setContradictions] = useState<DataContradiction[]>([])
+  const [fileTypeLabel, setFileTypeLabel] = useState<string>('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -110,14 +170,71 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
   const loadSample = (payload: string) => {
     setValue(payload)
     setShowSamples(false)
+    setBinaryPasteError(null)
     textareaRef.current?.focus()
   }
 
+  // ── Binary paste detection on the Text tab ───────────────────────────────
+
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newVal = e.target.value
+    // Sniff ZIP/DOCX magic bytes in pasted text (PK\x03\x04)
+    if (newVal.length >= 4 && isZipBytes(newVal)) {
+      setBinaryPasteError(
+        'This looks like a binary file (ZIP/DOCX) — use the Upload File tab instead'
+      )
+      // Don't update value so the binary bytes are rejected
+      return
+    }
+    // Sniff PDF magic (%PDF-)
+    if (newVal.startsWith('%PDF-')) {
+      setBinaryPasteError(
+        'This looks like a PDF binary — use the Upload File tab instead'
+      )
+      return
+    }
+    // Check for high ratio of non-printable chars in first 256 chars
+    const sample = newVal.slice(0, 256)
+    let nonPrintable = 0
+    for (let i = 0; i < sample.length; i++) {
+      const cc = sample.charCodeAt(i)
+      if (cc < 9 || (cc > 13 && cc < 32) || cc === 127) nonPrintable++
+    }
+    if (nonPrintable / sample.length > 0.1) {
+      setBinaryPasteError(
+        'This looks like a binary file — use Upload File instead'
+      )
+      return
+    }
+
+    setBinaryPasteError(null)
+    setValue(newVal)
+  }, [])
+
+  // ── File Processing Router ────────────────────────────────────────────────
+
   const processFile = useCallback(async (file: File) => {
     setExtractError(null)
+    setHiddenRuns([])
+    setContradictions([])
+    setFileTypeLabel(getFileTypeLabel(file))
+
+    const isDocx =
+      file.type.includes('wordprocessingml') ||
+      file.name.endsWith('.docx') ||
+      file.name.endsWith('.doc')
+    const isPdf =
+      file.type === 'application/pdf' ||
+      file.name.endsWith('.pdf')
+    const isTxt =
+      file.type === 'text/plain' ||
+      file.name.endsWith('.txt')
+    const isImage = file.type.startsWith('image/')
+
     const isAccepted = ACCEPTED_TYPES.includes(file.type) ||
       file.name.endsWith('.doc') || file.name.endsWith('.docx')
-    if (!isAccepted) {
+
+    if (!isAccepted && !isImage) {
       setExtractError(`Unsupported file type: ${file.type || file.name}. Use PDF, PNG, DOC, DOCX, or TXT.`)
       return
     }
@@ -125,19 +242,98 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
       setExtractError('File too large. Maximum 10 MB.')
       return
     }
+
     setUploadedFile(file)
     setIsExtracting(true)
+
     try {
-      const text = await extractTextFromFile(file)
-      setValue(text)
-      setTab('text')
-      textareaRef.current?.focus()
-    } catch {
-      setExtractError('Failed to read file. Please try again.')
+      // ── DOCX ──────────────────────────────────────────────────────────────
+      if (isDocx) {
+        const result = await extractDocxText(file)
+        setValue(result.visibleText || '[No readable text found in document]')
+
+        if (result.hiddenRuns.length > 0 || result.contradictions.length > 0) {
+          setHiddenRuns(result.hiddenRuns)
+          setContradictions(result.contradictions)
+          onDocumentFindings?.({
+            hiddenRuns: result.hiddenRuns,
+            contradictions: result.contradictions,
+            fileName: file.name,
+          })
+        }
+
+        // Append hidden run text to payload for detection engine
+        if (result.hiddenRuns.length > 0) {
+          const hiddenText = result.hiddenRuns.map((r) => r.text).join('\n')
+          setValue((prev) =>
+            prev + '\n\n[HIDDEN_TEXT_DETECTED]\n' + hiddenText
+          )
+        }
+        if (result.contradictions.length > 0) {
+          const contraText = result.contradictions
+            .map((c) => `[DATA_CONTRADICTION] Claimed: ${c.claimedValue} | Table: ${c.tableValue} | ${c.claim}`)
+            .join('\n')
+          setValue((prev) => prev + '\n\n' + contraText)
+        }
+      }
+
+      // ── PDF ───────────────────────────────────────────────────────────────
+      else if (isPdf) {
+        const result = await extractPdfText(file)
+        setValue(result.visibleText || '[No readable text found in PDF]')
+
+        if (result.hiddenRuns.length > 0) {
+          setHiddenRuns(result.hiddenRuns)
+          onDocumentFindings?.({
+            hiddenRuns: result.hiddenRuns,
+            contradictions: [],
+            fileName: file.name,
+          })
+          const hiddenText = result.hiddenRuns.map((r) => r.text).join('\n')
+          setValue((prev) => prev + '\n\n[HIDDEN_TEXT_DETECTED]\n' + hiddenText)
+        }
+      }
+
+      // ── TXT ───────────────────────────────────────────────────────────────
+      else if (isTxt) {
+        const result = await extractTxtText(file)
+        if (result.isBinary) {
+          setExtractError(result.binaryReason ?? 'This file appears to be binary, not plain text')
+          setUploadedFile(null)
+          return
+        }
+        setValue(result.text)
+      }
+
+      // ── Images ────────────────────────────────────────────────────────────
+      else if (isImage) {
+        await new Promise<void>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            const raw = e.target?.result as string
+            const strings = raw.match(/[\x20-\x7E]{4,}/g)?.join('\n') ?? ''
+            setValue(`[Image file: ${file.name}]\n\n${strings}`)
+            resolve()
+          }
+          reader.readAsBinaryString(file)
+        })
+      }
+
+      // ── Unknown / other ───────────────────────────────────────────────────
+      else {
+        setExtractError(`Unsupported file type. Use PDF, DOCX, TXT, or an image.`)
+        setUploadedFile(null)
+        return
+      }
+
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setExtractError(`Failed to parse file: ${msg}`)
+      setUploadedFile(null)
     } finally {
       setIsExtracting(false)
     }
-  }, [])
+  }, [onDocumentFindings])
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -349,7 +545,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                   transition={{ duration: 1.2, repeat: Infinity }}
                   style={{ color: 'var(--accent)', fontSize: '0.85rem', fontFamily: 'var(--font-mono)' }}
                 >
-                  Extracting text…
+                  Parsing {fileTypeLabel}…
                 </motion.div>
               ) : uploadedFile ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -358,10 +554,21 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                     <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 500 }}>
                       {uploadedFile.name}
                     </span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontFamily: 'var(--font-mono)',
+                      background: 'rgba(99,102,241,0.1)', padding: '1px 6px', borderRadius: 4 }}>
+                      {fileTypeLabel}
+                    </span>
                   </div>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    {(uploadedFile.size / 1024).toFixed(1)} KB · Text extracted — click Analyze tab to review
+                    {(uploadedFile.size / 1024).toFixed(1)} KB · Text extracted
                   </span>
+                  {hiddenRuns.length > 0 && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4,
+                      fontSize: '0.72rem', color: '#ef4444', fontFamily: 'var(--font-mono)' }}>
+                      <AlertTriangle size={11} />
+                      {hiddenRuns.length} hidden run{hiddenRuns.length !== 1 ? 's' : ''} detected
+                    </span>
+                  )}
                 </div>
               ) : (
                 <>
@@ -369,31 +576,22 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                     Drop file here or <span style={{ color: 'var(--accent)' }}>click to browse</span>
                   </div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: 1.6 }}>
-                    Supports PDF, PNG, JPG, DOC, DOCX, TXT
+                    Supports PDF, PNG, JPG, DOCX, TXT
                   </div>
                   <div style={{
-                    display: 'flex',
-                    gap: 8,
-                    marginTop: 4,
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
+                    display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center',
                   }}>
                     {[
                       { icon: <FileText size={11} color="#f97316" />, label: 'PDF' },
                       { icon: <Image size={11} color="var(--accent)" />, label: 'PNG / JPG' },
-                      { icon: <FileText size={11} color="#3b82f6" />, label: 'DOC / DOCX' },
+                      { icon: <FileText size={11} color="#3b82f6" />, label: 'DOCX' },
                       { icon: <File size={11} color="var(--text-muted)" />, label: 'TXT' },
                     ].map((b) => (
                       <span key={b.label} style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        padding: '3px 8px',
-                        background: 'var(--bg-elevated)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 20,
-                        fontSize: '0.68rem',
-                        color: 'var(--text-muted)',
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 8px', background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)', borderRadius: 20,
+                        fontSize: '0.68rem', color: 'var(--text-muted)',
                       }}>
                         {b.icon} {b.label}
                       </span>
@@ -402,6 +600,11 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                 </>
               )}
             </div>
+
+            {/* Hidden text findings banner */}
+            {(hiddenRuns.length > 0 || contradictions.length > 0) && (
+              <HiddenRunBanner runs={hiddenRuns} contradictions={contradictions} />
+            )}
 
             {/* Extract error */}
             <AnimatePresence>
@@ -426,7 +629,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
               )}
             </AnimatePresence>
 
-            {/* Analyze extracted text */}
+            {/* Analyze extracted content */}
             {uploadedFile && !isExtracting && value && (
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
@@ -436,7 +639,13 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                 <button
                   type="button"
                   className="btn-ghost"
-                  onClick={() => { setUploadedFile(null); setValue(''); setExtractError(null) }}
+                  onClick={() => {
+                    setUploadedFile(null)
+                    setValue('')
+                    setExtractError(null)
+                    setHiddenRuns([])
+                    setContradictions([])
+                  }}
                   style={{ padding: '8px 12px' }}
                 >
                   <X size={14} /> Clear
@@ -448,7 +657,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                   onClick={() => { if (value.trim()) onAnalyze(value) }}
                 >
                   <Zap size={16} />
-                  {isAnalyzing ? 'Analyzing…' : 'Analyze File'}
+                  {isAnalyzing ? 'Analyzing…' : `Analyze ${fileTypeLabel}`}
                 </button>
               </motion.div>
             )}
@@ -461,17 +670,51 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
           >
+            {/* Binary paste error */}
+            <AnimatePresence>
+              {binaryPasteError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    marginBottom: 10,
+                    padding: '8px 12px',
+                    background: 'rgba(239,68,68,0.08)',
+                    border: '1px solid var(--critical)',
+                    borderRadius: 8,
+                    color: 'var(--critical)',
+                    fontSize: '0.78rem',
+                    fontFamily: 'var(--font-mono)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <AlertTriangle size={13} />
+                  {binaryPasteError}
+                  <button
+                    type="button"
+                    onClick={() => setBinaryPasteError(null)}
+                    style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--critical)' }}
+                  >
+                    <X size={13} />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Textarea */}
             <form onSubmit={handleSubmit}>
               <textarea
                 ref={textareaRef}
                 className="code-textarea"
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
-                placeholder={`Paste code, scripts, or prompts here...\n\nZeroContext will analyze for:\n• XSS / SQL Injection / Command Injection\n• Prompt Injection / Goal Hijacking\n• Encoded payloads (Base64, hex, URL)\n• Homoglyph / confusable character attacks\n• Template injection / Prototype pollution`}
+                onChange={handleTextChange}
+                placeholder={`Paste code, scripts, or prompts here...\n\nZeroContext will analyze for:\n• XSS / SQL Injection / Command Injection\n• Prompt Injection / Goal Hijacking\n• Encoded payloads (Base64, hex, URL)\n• Homoglyph / confusable character attacks\n• Template injection / Prototype pollution\n\nNote: Binary files (DOCX, PDF) → use Upload File tab`}
                 rows={12}
                 style={{
-                  borderColor: isCTFMode ? 'var(--high)' : undefined,
+                  borderColor: isCTFMode ? 'var(--high)' : binaryPasteError ? 'var(--critical)' : undefined,
                 }}
                 disabled={isAnalyzing}
                 spellCheck={false}
@@ -494,7 +737,7 @@ export const AnalysisInput: React.FC<AnalysisInputProps> = ({
                     <button
                       type="button"
                       className="btn-ghost"
-                      onClick={() => setValue('')}
+                      onClick={() => { setValue(''); setBinaryPasteError(null) }}
                       style={{ padding: '8px 12px' }}
                     >
                       <X size={14} /> Clear

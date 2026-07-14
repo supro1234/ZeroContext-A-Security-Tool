@@ -1,8 +1,9 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Download, FileText, Shield } from 'lucide-react'
+import { Download, FileText, Shield, Globe } from 'lucide-react'
 import type { IncidentReport } from '../types/threat'
 import { sanitizeForExport } from '../utils/escapeText'
+import { exportSandboxReplay } from '../utils/sandboxReplay'
 
 interface ForensicExportProps {
   reports: IncidentReport[]
@@ -28,47 +29,168 @@ function buildDocxBlob(report: IncidentReport): Blob {
   }
   const sColor = severityColor[report.severity] ?? '000000'
 
+  // ── XML primitives ─────────────────────────────────────────────────────────
+
   const para = (text: string, bold = false, color = '000000', size = 20) =>
     `<w:p><w:r><w:rPr>${bold ? '<w:b/>' : ''}<w:color w:val="${color}"/><w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr><w:t xml:space="preserve">${escXml(text)}</w:t></w:r></w:p>`
 
-  const heading = (text: string) => para(text, true, '1F3864', 24)
+  const heading = (text: string) => para(text, true, '1F3864', 28)
   const subheading = (text: string) => para(text, true, '2E74B5', 22)
   const normal = (text: string) => para(text, false, '333333', 20)
-  const rule = () => `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="CCCCCC"/></w:pBdr></w:pPr></w:p>`
+  const separator = () => `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="CCCCCC"/></w:pBdr></w:pPr></w:p>`
+
+  // ── Table builders ─────────────────────────────────────────────────────────
+
+  /**
+   * Build a table cell with background shade and text.
+   * bgColor: optional 6-char hex fill (e.g. "1F3864"). Bold = header style.
+   */
+  const tableCell = (
+    text: string,
+    opts: { bold?: boolean; color?: string; bgColor?: string; size?: number; width?: number } = {}
+  ) => {
+    const { bold = false, color = '333333', bgColor, size = 18, width } = opts
+    const shd = bgColor ? `<w:shd w:val="clear" w:color="auto" w:fill="${bgColor}"/>` : ''
+    const w = width ? `<w:tcW w:w="${width}" w:type="dxa"/>` : ''
+    return `<w:tc><w:tcPr>${w}${shd}</w:tcPr><w:p><w:r><w:rPr>${bold ? '<w:b/>' : ''}<w:color w:val="${color}"/><w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr><w:t xml:space="preserve">${escXml(text)}</w:t></w:r></w:p></w:tc>`
+  }
+
+  /**
+   * Build a complete table row.
+   */
+  const tableRow = (cells: string[], trBg?: string) => {
+    const trPr = trBg ? `<w:trPr><w:trHeight w:val="300"/></w:trPr>` : `<w:trPr><w:trHeight w:val="280"/></w:trPr>`
+    return `<w:tr>${trPr}${cells.join('')}</w:tr>`
+  }
+
+  /**
+   * Build a table with a header row (dark blue) and data rows (alternating shading).
+   * headers: column names, rows: array of column-value arrays
+   */
+  const buildTable = (headers: string[], rows: string[][], widths?: number[]) => {
+    const headerCells = headers.map((h, i) =>
+      tableCell(h, { bold: true, color: 'FFFFFF', bgColor: '1F3864', size: 18, width: widths?.[i] })
+    )
+    const headerRow = tableRow(headerCells)
+
+    const dataRows = rows.map((row, ri) => {
+      const bg = ri % 2 === 0 ? 'F2F2F2' : 'FFFFFF'
+      const cells = row.map((cell, ci) =>
+        tableCell(cell, { color: '333333', bgColor: bg, size: 17, width: widths?.[ci] })
+      )
+      return tableRow(cells)
+    })
+
+    const tblW = widths ? widths.reduce((s, w) => s + w, 0) : 9360
+    return `<w:tbl>
+      <w:tblPr>
+        <w:tblW w:w="${tblW}" w:type="dxa"/>
+        <w:tblBorders>
+          <w:top w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:left w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:bottom w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:right w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:insideH w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          <w:insideV w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+        </w:tblBorders>
+        <w:tblCellMar>
+          <w:top w:w="80" w:type="dxa"/>
+          <w:left w:w="100" w:type="dxa"/>
+          <w:bottom w:w="80" w:type="dxa"/>
+          <w:right w:w="100" w:type="dxa"/>
+        </w:tblCellMar>
+      </w:tblPr>
+      ${headerRow}${dataRows.join('')}
+    </w:tbl>`
+  }
+
+  // ── Document body ──────────────────────────────────────────────────────────
 
   let body = ''
   body += heading('ZeroContext Incident Report')
-  body += rule()
+  body += separator()
   body += normal(`Report ID: ${sanitizeForExport(report.id)}`)
   body += normal(`Timestamp: ${sanitizeForExport(report.timestamp)}`)
+  body += normal(`Source File: ${sanitizeForExport(report.sourceFileName ?? 'Text input')}`)
   body += normal(`Engine Mode: ${sanitizeForExport(report.engineMode)}`)
   body += normal(`Rules Version: ${sanitizeForExport(report.rulesVersion)}`)
   body += normal(`Processing Time: ${report.processingTimeMs}ms`)
   body += normal(`Input Length: ${report.inputLength} characters`)
   body += normal(`Input SHA-256: ${sanitizeForExport(report.inputHash)}`)
   body += para(`Overall Severity: ${report.severity}`, true, sColor, 22)
-  body += rule()
+  body += separator()
+
+  // ── MAIN THREAT TABLE: Location | Category | Confidence | Excerpt | Reason ─
 
   body += subheading(`Threats Detected (${report.threats.length})`)
-  for (const [i, t] of report.threats.entries()) {
-    body += para(`[${i + 1}] ${sanitizeForExport(t.ruleName)} — ${t.severity}`, true, severityColor[t.severity] ?? '000000', 20)
-    body += normal(`  Rule ID: ${sanitizeForExport(t.ruleId)}  |  Category: ${sanitizeForExport(t.category)}`)
-    body += normal(`  Matched: ${sanitizeForExport(t.matchedText)}`)
-    body += normal(`  Context: ${sanitizeForExport(t.context)}`)
-    body += normal(`  Confidence: ${(t.confidence * 100).toFixed(0)}%  |  Layer: ${t.layer}  |  Offset: ${t.offset}`)
-    body += normal('')
+  body += para('')  // spacer
+
+  if (report.threats.length > 0) {
+    const threatRows = report.threats.map((t) => [
+      t.location ?? (t.layer > 0 ? `Layer ${t.layer}` : 'Raw input'),
+      t.category.replace(/_/g, ' '),
+      `${(t.confidence * 100).toFixed(0)}%`,
+      sanitizeForExport(t.matchedText).slice(0, 80),
+      sanitizeForExport(t.reason ?? t.ruleName),
+    ])
+    body += buildTable(
+      ['Location', 'Category', 'Confidence', 'Excerpt', 'Reason / Rule'],
+      threatRows,
+      [1200, 1400, 1000, 2760, 3000]
+    )
+  } else {
+    body += normal('No threats detected.')
   }
+
+  // ── HIDDEN TEXT TABLE ─────────────────────────────────────────────────────
+
+  if (report.hiddenRuns && report.hiddenRuns.length > 0) {
+    body += separator()
+    body += subheading(`Hidden Text Findings (${report.hiddenRuns.length}) — AUTO HIGH SEVERITY`)
+    body += para('')
+    const REASON_LABELS: Record<string, string> = {
+      vanish: 'w:vanish (explicitly hidden)', webHidden: 'w:webHidden',
+      whiteColor: 'White/near-white colour', nearZeroSize: 'Near-zero font size', doubleHide: 'Double-hide trick',
+    }
+    const hiddenRows = report.hiddenRuns.map((r) => [
+      String(r.offset),
+      REASON_LABELS[r.reason] ?? r.reason,
+      sanitizeForExport(r.text).slice(0, 100),
+      [r.colorHex ? `#${r.colorHex}` : '', r.sizePt !== undefined ? `${r.sizePt}pt` : ''].filter(Boolean).join(', '),
+    ])
+    body += buildTable(['Offset', 'Detection Method', 'Hidden Text Preview', 'Properties'], hiddenRows, [900, 2200, 3560, 1500])
+  }
+
+  // ── DATA CONTRADICTION TABLE ──────────────────────────────────────────────
+
+  if (report.dataContradictions && report.dataContradictions.length > 0) {
+    body += separator()
+    body += subheading(`Data Contradictions (${report.dataContradictions.length}) — HIGH WEIGHT SIGNAL`)
+    body += para('')
+    const contradictionRows = report.dataContradictions.map((c) => [
+      sanitizeForExport(c.tableValue), sanitizeForExport(c.claimedValue),
+      `${(c.confidence * 100).toFixed(0)}%`, sanitizeForExport(c.claim).slice(0, 120),
+    ])
+    body += buildTable(['Table Shows', 'Text Claims', 'Confidence', 'Contradicting Sentence'], contradictionRows, [1800, 1800, 900, 4860])
+  }
+
+  // ── HOMOGLYPHS TABLE ──────────────────────────────────────────────────────
 
   if (report.homoglyphs.length > 0) {
-    body += rule()
+    body += separator()
     body += subheading(`Homoglyphs (${report.homoglyphs.length})`)
-    for (const h of report.homoglyphs) {
-      body += normal(`  "${sanitizeForExport(h.original)}" (${sanitizeForExport(h.codepoint)}) → "${sanitizeForExport(h.replacement)}" @ pos ${h.position}`)
-    }
+    body += para('')
+    const hRows = report.homoglyphs.map((h) => [
+      sanitizeForExport(h.original), sanitizeForExport(h.codepoint),
+      sanitizeForExport(h.replacement), h.script, String(h.position),
+    ])
+    body += buildTable(['Char', 'Codepoint', 'Looks Like', 'Script', 'Position'], hRows, [600, 1200, 900, 1400, 800])
   }
 
+  // ── AI Analysis ────────────────────────────────────────────────────────────
+
   if (report.aiAnalysis) {
-    body += rule()
+    body += separator()
     body += subheading('AI Analysis')
     body += normal(`Model: ${sanitizeForExport(report.aiAnalysis.modelUsed)}`)
     body += normal(`Prompt Injection Score: ${(report.aiAnalysis.promptInjectionScore * 100).toFixed(1)}%`)
@@ -76,8 +198,8 @@ function buildDocxBlob(report: IncidentReport): Blob {
     body += normal(`Summary: ${sanitizeForExport(report.aiAnalysis.threatSummary)}`)
   }
 
-  body += rule()
-  body += para('This report has been sanitized. All payload content has HTML entities escaped.', false, '888888', 18)
+  body += separator()
+  body += para('Generated by ZeroContext. All payload content has been sanitized (HTML-escaped).', false, '888888', 16)
 
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
@@ -94,7 +216,7 @@ function buildDocxBlob(report: IncidentReport): Blob {
   xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
   xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"
   mc:Ignorable="w14 w15 wp14">
-  <w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body>
+  <w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080"/></w:sectPr></w:body>
 </w:document>`
 
   const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -119,8 +241,6 @@ function buildDocxBlob(report: IncidentReport): Blob {
   <w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="20"/></w:rPr></w:rPrDefault></w:docDefaults>
 </w:styles>`
 
-  // Build a ZIP manually using the Blob API
-  // We use a helper that assembles the OOXML zip structure
   return buildZip([
     { name: '[Content_Types].xml', content: contentTypesXml },
     { name: '_rels/.rels', content: relsXml },
@@ -279,7 +399,7 @@ export const ForensicExport: React.FC<ForensicExportProps> = ({ reports }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="glass-sm mobile-export-stack"
-      style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}
+      style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 120 }}>
         <Shield size={14} color="var(--accent)" />
@@ -292,6 +412,14 @@ export const ForensicExport: React.FC<ForensicExportProps> = ({ reports }) => {
       </button>
       <button className="btn-ghost" onClick={exportJson} style={{ fontSize: '0.78rem' }}>
         <Download size={13} /> Export .json
+      </button>
+      <button
+        className="btn-ghost"
+        onClick={() => exportSandboxReplay(latest)}
+        style={{ fontSize: '0.78rem', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}
+        title="Download a self-contained offline HTML report — works air-gapped"
+      >
+        <Globe size={13} /> Sandbox Replay
       </button>
     </motion.div>
   )

@@ -1,0 +1,142 @@
+[
+  {
+    "id": "B-01",
+    "category": "benign",
+    "expectedThreats": 0,
+    "description": "Standard prose with punctuation",
+    "payload": "Hello there, this is just a normal sentence. What's up? (I hope this doesn't trigger anything!)"
+  },
+  {
+    "id": "B-02",
+    "category": "benign",
+    "expectedThreats": 0,
+    "description": "SQL discussion without injection",
+    "payload": "I'm having trouble with my SELECT * FROM users WHERE id = ? query. Can someone help me optimize it?"
+  },
+  {
+    "id": "B-03",
+    "category": "benign",
+    "expectedThreats": 0,
+    "description": "HTML tutorial snippet",
+    "payload": "To add a bold text, use the <b> tag or <strong> element in your HTML document. You can also write inline styles like <span style='color: red;'>red</span>."
+  },
+  {
+    "id": "B-04",
+    "category": "benign",
+    "expectedThreats": 0,
+    "description": "Bash discussion",
+    "payload": "I always use 'cat file.txt | grep something' but I heard 'grep something file.txt' is better. Also, how do I use /etc/passwd in a secure way?"
+  },
+  {
+    "id": "B-05",
+    "category": "benign",
+    "expectedThreats": 0,
+    "description": "URL with parameters",
+    "payload": "https://example.com/search?q=hello+world&id=123&session=abcdef"
+  },
+  {
+    "id": "B-06",
+    "category": "benign",
+    "expectedThreats": 0,
+    "description": "Random base64 string",
+    "payload": "SGVsbG8gV29ybGQ="
+  },
+  {
+    "id": "B-07",
+    "category": "benign",
+    "expectedThreats": 0,
+    "description": "Mathematical formula",
+    "payload": "If a=1 and b=1, then a=b OR 1=1 is mathematically true."
+  },
+  {
+    "id": "M-01",
+    "category": "xss",
+    "expectedThreats": 1,
+    "description": "Basic script tag injection",
+    "payload": "<script>alert(1)</script>"
+  },
+  {
+    "id": "M-02",
+    "category": "xss",
+    "expectedThreats": 1,
+    "description": "XSS via image onload",
+    "payload": "<img src=x onerror=alert(document.cookie)>"
+  },
+  {
+    "id": "M-03",
+    "category": "sqli",
+    "expectedThreats": 1,
+    "description": "Classic SQLi auth bypass",
+    "payload": "admin' OR '1'='1"
+  },
+  {
+    "id": "M-04",
+    "category": "sqli",
+    "expectedThreats": 1,
+    "description": "UNION based SQLi",
+    "payload": "' UNION SELECT username, password FROM users--"
+  },
+  {
+    "id": "M-05",
+    "category": "lfi",
+    "expectedThreats": 1,
+    "description": "Basic Local File Inclusion",
+    "payload": "../../../../etc/passwd"
+  },
+  {
+    "id": "M-06",
+    "category": "rce",
+    "expectedThreats": 1,
+    "description": "PHP webshell",
+    "payload": "<?php eval($_GET['cmd']); ?>"
+  },
+  {
+    "id": "M-07",
+    "category": "rce",
+    "expectedThreats": 1,
+    "description": "Command injection via backticks",
+    "payload": "127.0.0.1; `cat /etc/passwd`"
+  },
+  {
+    "id": "M-08",
+    "category": "obfuscation",
+    "expectedThreats": 1,
+    "description": "Base64 encoded script tag",
+    "payload": "PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=="
+  },
+  {
+    "id": "M-09",
+    "category": "obfuscation",
+    "expectedThreats": 1,
+    "description": "URL encoded XSS",
+    "payload": "%3Cscript%3Ealert%281%29%3C%2Fscript%3E"
+  },
+  {
+    "id": "M-10",
+    "category": "obfuscation",
+    "expectedThreats": 1,
+    "description": "Double URL encoded SQLi",
+    "payload": "%2527%2520%254F%2552%2520%2527%2531%2527%253D%2527%2531"
+  },
+  {
+    "id": "M-11",
+    "category": "obfuscation",
+    "expectedThreats": 1,
+    "description": "Hex encoded alert",
+    "payload": "\\x3c\\x73\\x63\\x72\\x69\\x70\\x74\\x3e\\x61\\x6c\\x65\\x72\\x74\\x28\\x31\\x29\\x3c\\x2f\\x73\\x63\\x72\\x69\\x70\\x74\\x3e"
+  },
+  {
+    "id": "M-12",
+    "category": "obfuscation",
+    "expectedThreats": 1,
+    "description": "HTML entities XSS",
+    "payload": "&lt;img src=x onerror=alert(1)&gt;"
+  },
+  {
+    "id": "M-13",
+    "category": "obfuscation",
+    "expectedThreats": 1,
+    "description": "Zero-width characters in script tag",
+    "payload": "<s\u200bcript>alert(1)</s\u200bcript>"
+  }
+]

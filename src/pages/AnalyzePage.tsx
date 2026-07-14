@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Moon, Sun, Wifi, Loader, Shield, Terminal, GitBranch, Cpu, Flag, RotateCcw, ChevronLeft } from 'lucide-react'
+import { Moon, Sun, Wifi, Loader, Shield, Terminal, GitBranch, Cpu, Flag, RotateCcw, ChevronLeft, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
 import { useWorker } from '../hooks/useWorker'
@@ -11,6 +11,8 @@ import { ThreatReport } from '../components/ThreatReport'
 import { NormalizationTrace } from '../components/NormalizationTrace'
 import { LiveFeed } from '../components/LiveFeed'
 import { ForensicExport } from '../components/ForensicExport'
+import { ExplainabilityTrace } from '../components/ExplainabilityTrace'
+import { AdversarialMode } from '../components/AdversarialMode'
 import type { IncidentReport } from '../types/threat'
 
 // ── Staged post-analysis messages shown before revealing results ────────────
@@ -28,10 +30,30 @@ export const AnalyzePage: React.FC = () => {
   const { status: backendStatus } = useBackendStatus()
   const isMobile  = useMediaQuery('(max-width: 640px)')    // ← React-based, never purged
 
-  const [isCTFMode,      setIsCTFMode]      = useState(false)
-  const [reports,        setReports]        = useState<IncidentReport[]>([])
-  const [currentReport,  setCurrentReport]  = useState<IncidentReport | null>(null)
-  const [error,          setError]          = useState<string | null>(null)
+  const [isCTFMode,        setIsCTFMode]        = useState(false)
+  const [isAdversarialMode, setIsAdversarialMode] = useState(false)
+  const [reports,           setReports]           = useState<IncidentReport[]>([])
+  const [currentReport,     setCurrentReport]     = useState<IncidentReport | null>(null)
+  const [error,             setError]             = useState<string | null>(null)
+
+  // Track the raw payload for AdversarialMode re-analysis
+  const lastPayloadRef = useRef<string>('')
+
+  // Buffer document findings (hidden runs, contradictions) from AnalysisInput
+  // until the worker finishes and calls handleResult
+  const documentFindings = useRef<{
+    hiddenRuns: import('../types/threat').HiddenRun[]
+    contradictions: import('../types/threat').DataContradiction[]
+    fileName: string
+  } | null>(null)
+
+  const handleDocumentFindings = useCallback((findings: {
+    hiddenRuns: import('../types/threat').HiddenRun[]
+    contradictions: import('../types/threat').DataContradiction[]
+    fileName: string
+  }) => {
+    documentFindings.current = findings
+  }, [])
 
   // ── Realistic loading state ─────────────────────────────────────────────
   const [isRevealing,    setIsRevealing]    = useState(false)
@@ -47,7 +69,26 @@ export const AnalyzePage: React.FC = () => {
   const handleResult = useCallback(async (report: IncidentReport) => {
     let finalReport = report
 
-    // If backend is online, enrich with AI analysis
+    // Merge any document-level findings (hidden text, contradictions)
+    if (documentFindings.current) {
+      const df = documentFindings.current
+      const hiddenSeverity: import('../types/threat').Severity =
+        df.hiddenRuns.length > 0 ? 'HIGH' : finalReport.severity
+      const contradictionSeverity: import('../types/threat').Severity =
+        df.contradictions.length > 0 ? 'HIGH' : finalReport.severity
+      const bumpedSeverity = (['CRITICAL','HIGH','MEDIUM','LOW','INFO','SAFE'] as const).find(
+        (s) => [hiddenSeverity, contradictionSeverity, finalReport.severity].includes(s)
+      ) ?? finalReport.severity
+
+      finalReport = {
+        ...finalReport,
+        hiddenRuns: df.hiddenRuns,
+        dataContradictions: df.contradictions,
+        sourceFileName: df.fileName,
+        severity: bumpedSeverity,
+      }
+      documentFindings.current = null
+    }
     if (backendStatus === 'online' && report.normalizationTrace.length > 0) {
       const finalText = report.normalizationTrace[report.normalizationTrace.length - 1].outputSnippet
       const aiResult  = await callAIAnalysis(finalText, report.inputHash)
@@ -94,7 +135,13 @@ export const AnalyzePage: React.FC = () => {
     setCurrentReport(null)
   }, [])
 
-  const { analyze, cancel, progress, isReady, isAnalyzing } = useWorker(handleResult, handleError)
+  const { analyze: analyzeWorker, cancel, progress, isReady, isAnalyzing } = useWorker(handleResult, handleError)
+
+  // Wrap analyze to also capture the raw payload
+  const analyze = useCallback((payload: string) => {
+    lastPayloadRef.current = payload
+    analyzeWorker(payload)
+  }, [analyzeWorker])
 
   const newSession = useCallback(() => {
     clearRevealTimers()
@@ -262,6 +309,23 @@ export const AnalyzePage: React.FC = () => {
               </button>
             )}
 
+            {/* Adversarial Mode toggle — show when there's a report */}
+            {currentReport && !isMobile && (
+              <button
+                className="zc-desktop-only btn-ghost"
+                onClick={() => setIsAdversarialMode((a) => !a)}
+                style={{
+                  padding: '5px 10px', fontSize: '0.72rem', minHeight: 36,
+                  color: isAdversarialMode ? '#f97316' : 'var(--text-muted)',
+                  borderColor: isAdversarialMode ? '#f97316' : 'var(--border)',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}
+                title="Toggle Adversarial Mode — test obfuscation evasion"
+              >
+                <Zap size={12} /> Adversarial
+              </button>
+            )}
+
             {/* Theme toggle — ALWAYS visible */}
             <button
               onClick={toggleTheme}
@@ -339,6 +403,7 @@ export const AnalyzePage: React.FC = () => {
               isAnalyzing={isBusy}
               isWorkerReady={isReady}
               isCTFMode={isCTFMode}
+              onDocumentFindings={handleDocumentFindings}
             />
 
             {/* Worker live feed */}
@@ -436,6 +501,38 @@ export const AnalyzePage: React.FC = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <ThreatReport report={currentReport} />
+
+                  {/* Explainability Trace — below ThreatReport */}
+                  <AnimatePresence>
+                    {currentReport.threats.length > 0 && (
+                      <motion.div
+                        key="explain"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15 }}
+                      >
+                        <ExplainabilityTrace report={currentReport} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Adversarial Mode — shown when toggled */}
+                  <AnimatePresence>
+                    {isAdversarialMode && (
+                      <motion.div
+                        key="adversarial"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ delay: 0.05 }}
+                      >
+                        <AdversarialMode
+                          payload={lastPayloadRef.current}
+                          report={currentReport}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               ) : isRevealing ? (
                 /* ── "Report incoming" placeholder during reveal ── */

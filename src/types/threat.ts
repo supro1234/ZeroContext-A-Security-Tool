@@ -15,6 +15,8 @@ export type ThreatCategory =
   | 'PROTOTYPE_POLLUTION'
   | 'REDOS'
   | 'ENCODING_ABUSE'
+  | 'HIDDEN_TEXT'
+  | 'DATA_CONTRADICTION'
   | 'UNKNOWN'
 
 export interface ThreatMatch {
@@ -27,6 +29,8 @@ export interface ThreatMatch {
   offset: number
   layer: number            // which decode layer this was found at
   confidence: number       // 0–1
+  location?: string        // e.g. "Page 1, Run 3" or "Layer 2"
+  reason?: string          // human-readable explanation for table view
 }
 
 export interface NormalizationLayer {
@@ -45,6 +49,27 @@ export interface HomoglyphMatch {
   script: string           // e.g. 'Cyrillic', 'Greek'
 }
 
+// ── Document-specific findings ────────────────────────────────
+
+export type HiddenReason = 'vanish' | 'webHidden' | 'whiteColor' | 'nearZeroSize' | 'doubleHide'
+
+export interface HiddenRun {
+  text: string
+  reason: HiddenReason
+  offset: number
+  colorHex?: string
+  sizePt?: number
+}
+
+export interface DataContradiction {
+  claim: string
+  tableValue: string
+  claimedValue: string
+  confidence: number
+}
+
+// ── Main report ────────────────────────────────────────────────
+
 export interface IncidentReport {
   id: string
   sessionId: string
@@ -55,6 +80,9 @@ export interface IncidentReport {
   threats: ThreatMatch[]
   normalizationTrace: NormalizationLayer[]
   homoglyphs: HomoglyphMatch[]
+  hiddenRuns?: HiddenRun[]
+  dataContradictions?: DataContradiction[]
+  sourceFileName?: string  // original uploaded filename
   aiAnalysis?: AIAnalysisResult | null
   processingTimeMs: number
   rulesVersion: string

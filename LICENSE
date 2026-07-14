@@ -1,0 +1,90 @@
+ZeroContext Source-Available License
+Version 1.0, 2025
+Copyright (c) 2025 Lumix Team. All rights reserved.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PREAMBLE
+
+ZeroContext is made available as source-visible software. You are free to read,
+study, and use this software. However, redistribution, reproduction, or
+re-publication of this codebase — in whole or in part — without the express
+written permission of the copyright holder is strictly prohibited.
+
+This license is designed to balance openness (you can use and inspect the
+source) with protection (you cannot clone, fork, or republish this project as
+your own without permission).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GRANT OF USE
+
+Subject to the conditions below, the copyright holder grants you a worldwide,
+royalty-free, non-exclusive, non-transferable right to:
+
+  ✓  Use this software for personal, educational, or internal business purposes.
+  ✓  Read, study, and inspect the source code.
+  ✓  Submit bug reports and contributions via the official repository.
+  ✓  Run the software locally or deploy it for your own private use.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESTRICTIONS — THE FOLLOWING ARE STRICTLY PROHIBITED WITHOUT PRIOR WRITTEN
+PERMISSION FROM THE COPYRIGHT HOLDER:
+
+  ✗  Copying, cloning, or forking this repository to create a separate project
+     or product — whether public, private, or commercial.
+
+  ✗  Redistributing, republishing, or uploading the source code (or any
+     substantial portion of it) to any platform, marketplace, or repository
+     other than the official ZeroContext repository.
+
+  ✗  Rebranding or presenting this software (or a derivative of it) as your
+     own original work.
+
+  ✗  Selling, sublicensing, or commercializing this software or any derivative
+     work based on it.
+
+  ✗  Removing, altering, or obscuring this license notice, copyright notices,
+     or attribution headers from any file in this project.
+
+  ✗  Using this codebase as a template or boilerplate to build and distribute
+     a competing tool or product.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CONTRIBUTIONS
+
+By submitting a contribution (pull request, patch, or issue) to this project,
+you agree that your contribution is made under the same terms as this license
+and that the copyright holder retains full rights over all merged contributions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REQUESTING PERMISSION
+
+To request permission for any use not covered by the Grant of Use above,
+contact the copyright holder via the official GitHub repository:
+
+  https://github.com/supro1234/ZeroContext
+
+Requests for academic research, security auditing, or non-commercial derivative
+works will be reviewed on a case-by-case basis.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DISCLAIMER OF WARRANTIES
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY
+CLAIM, DAMAGES, OR OTHER LIABILITY — WHETHER IN AN ACTION OF CONTRACT, TORT,
+OR OTHERWISE — ARISING FROM, OUT OF, OR IN CONNECTION WITH THIS SOFTWARE OR
+THE USE OR OTHER DEALINGS IN THIS SOFTWARE.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Copyright (c) 2025 Lumix Team
+All rights reserved.
