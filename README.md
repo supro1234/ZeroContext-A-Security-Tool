@@ -15,7 +15,7 @@ Sub-6ms triage · Zero bytes uploaded · Works fully offline · Open Source
 [![License: Source-Available](https://img.shields.io/badge/License-Source--Available-orange.svg)](LICENSE)
 [![F1 Score](https://img.shields.io/badge/F1%20Score-92.3%25-10b981)](benchmark/run.ts)
 
-**🚀 Live Demo: [Launch ZeroContext](https://zero-context-a-security-tool-ds1ir9mug-supro1234s-projects.vercel.app/)**
+**🚀 Live Demo: [Launch ZeroContext](https://zero-context-a-security-tool-d6t1.vercel.app/)**
 
 </div>
 
